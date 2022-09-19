@@ -31,7 +31,7 @@ p_initpacket(t_pack * pack, uint64_t seq)
 {
     uint16_t i = 0;
 
-    ft_bzero(pack, sizeof(pack));
+    ft_bzero(pack, sizeof(t_pack));
 
     pack->hdr.type = ICMP_ECHO;
     pack->hdr.code = 0;

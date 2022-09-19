@@ -70,6 +70,13 @@ e_setsockets(void)
         sockfd = -1;
         return (u_printerr("failed to set socket options", "setsockopt"));
     }
+    // ttl ?
+    if ((setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout))) != 0)
+    {
+        printf("%s %d\n", strerror(errno), errno);
+        sockfd = -1;
+        return (u_printerr("failed to set socket options", "setsockopt"));
+    }
     return (sockfd);
 }
 
