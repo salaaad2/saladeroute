@@ -1,0 +1,8 @@
+#+TITLE: Readme
+#+author: fmoenne- paure
+
+* Prerequisite :
+
+~docker build -t ft_ping_img .~
+~docker run -itd --name ft_ping -v $(pwd)/srcs:/opt/ft_ping ft_ping_img~
+~docker exec -it ft_ping "/bin/bash"~
