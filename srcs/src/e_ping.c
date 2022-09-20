@@ -6,6 +6,8 @@
 /* ()__)____________)))))   :^}  */
 /*********************************/
 
+#include <netinet/in.h>
+#include <netinet/ip_icmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -49,29 +51,36 @@ e_setsockets(void)
 {
     const int hdr = 1;
     int sockfd;
+    int ttl;
     struct timeval rcv_timeout =
         {1, 1};
 
+    ttl = 1;
     rcv_timeout.tv_sec = 1;
     rcv_timeout.tv_usec = 0;
     if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
     {
         return (u_printerr("failed to create socket", "socket"));
     }
-    if ((setsockopt(sockfd, SOL_IP, IP_RECVERR, &hdr, sizeof(hdr))) != 0)
+    if (setsockopt(sockfd, IPPROTO_ICMP, IP_TTL, &ttl, sizeof(int)) != 0)
+    {
+        printf("%s %d\n", strerror(errno), errno);
+        sockfd = -1;
+        return (u_printerr("failed to set socket options", "ttl"));
+    }
+    if (setsockopt(sockfd, SOL_IP, IP_RECVERR, &hdr, sizeof(hdr)) != 0)
     {
         printf("%s %d\n", strerror(errno), errno);
         sockfd = -1;
         return (u_printerr("failed to set socket options", "setsockopt"));
     }
-    if ((setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout))) != 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
     {
         printf("%s %d\n", strerror(errno), errno);
         sockfd = -1;
         return (u_printerr("failed to set socket options", "setsockopt"));
     }
-    // ttl ?
-    if ((setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout))) != 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
     {
         printf("%s %d\n", strerror(errno), errno);
         sockfd = -1;
@@ -199,7 +208,9 @@ e_start(char *url, t_opts * opts)
     ** socket() and setsockopt()
     ** @ret > 0
     ** */
-    if ((sock = e_setsockets()) < 0) {
+    sock = e_setsockets();
+    if (sock < 0) {
+        free(opts);
         return (1);
     }
 

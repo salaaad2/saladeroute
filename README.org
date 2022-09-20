@@ -24,3 +24,6 @@ In  the modern network environment the traditional traceroute methods can not be
 /!\ probe max is 30 hops
 - measure time
 - setsockopt(IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+
+
+2: premier paquet pas icmp: icmp toujours ttl64; udp ttl augmente /!\ VOIR .pcap

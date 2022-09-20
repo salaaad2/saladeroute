@@ -14,5 +14,5 @@ int
 u_printerr(char * reason, char * value)
 {
     dprintf(2, "ft_ping: %s: %s\n[perror:%s]\n", reason, value, strerror(errno));
-    return (1);
+    return (-1);
 }
