@@ -23,152 +23,12 @@
 #include "u_libft.h"
 
 int
-e_output(t_ping * ping, uint8_t isstr)
-{
-    uint32_t ploss;
-    char * str = (isstr ? ping->url : ping->ipstr);
-
-    if (ping->received != 0) {
-      ploss = u_ploss(ping->sent, ping->received);
-    } else {
-        ploss = 100;
-    }
-
-    printf("\n--- %s ft_ping statistics ---\n", str);
-    dprintf(1, "%ld packets transmitted, %ld received,  %d%% packet loss\n",
-            ping->sent, ping->received, ploss);
-    if (ping->received != 0) {
-        dprintf(1,
-                "round-trip min/avg/max/mdev = %.3Lf/%.3Lf/%.3Lf/%.3Lf ms\n",
-                ping->timer->min, ping->timer->avg, ping->timer->max,
-                u_mdev(1, 1.0f));
-    }
-    return (0);
-}
-
-int
-e_setsockets(void)
-{
-    const int hdr = 1;
-    int sockfd;
-    int ttl;
-    struct timeval rcv_timeout =
-        {1, 1};
-
-    ttl = 1;
-    rcv_timeout.tv_sec = 1;
-    rcv_timeout.tv_usec = 0;
-    if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
-    {
-        return (u_printerr("failed to create socket", "socket"));
-    }
-    if (setsockopt(sockfd, IPPROTO_ICMP, IP_TTL, &ttl, sizeof(int)) != 0)
-    {
-        printf("%s %d\n", strerror(errno), errno);
-        sockfd = -1;
-        return (u_printerr("failed to set socket options", "ttl"));
-    }
-    if (setsockopt(sockfd, SOL_IP, IP_RECVERR, &hdr, sizeof(hdr)) != 0)
-    {
-        printf("%s %d\n", strerror(errno), errno);
-        sockfd = -1;
-        return (u_printerr("failed to set socket options", "setsockopt"));
-    }
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
-    {
-        printf("%s %d\n", strerror(errno), errno);
-        sockfd = -1;
-        return (u_printerr("failed to set socket options", "setsockopt"));
-    }
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
-    {
-        printf("%s %d\n", strerror(errno), errno);
-        sockfd = -1;
-        return (u_printerr("failed to set socket options", "setsockopt"));
-    }
-    return (sockfd);
-}
-
-/*
-    struct timeval rcv_timeout = {gdata.recv_timeout / 1000, 1000 * (gdata.recv_timeout % 1000)};
-    if (setsockopt(sktfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&rcv_timeout, sizeof(rcv_timeout)) < 0)
-        perror(NULL), freexit(EXIT_FAILURE);
-
-** sendto icmp header set by p_initpacket()
-** recvfrom IP and ICMP headers and deserialize them
-** t_reply->ip
-** t_reply->icmp
- */
-t_reply *
-e_ping(int sock, struct sockaddr_in * addr, t_ping * ping)
-{
-    socklen_t addrsize = sizeof(const struct sockaddr);
-    char recvbuf[98];
-    t_reply * full;
-    t_pack * pack = ping->pack;
-    t_time * timer = ping->timer;
-    int ret = 42;
-
-    ft_bzero(recvbuf, 98);
-
-    if (sendto(sock, pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
-        u_printerr("socket error", "sendto()");
-        return (NULL);
-    }
-    ping->sent++;
-    timer->itv = u_timest();
-    if ((ret = recvfrom(sock, recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)addr, &addrsize)) < 0) {
-        u_updatetime(u_timest(), timer);
-        return (NULL);
-    }
-    ping->received++;
-    u_updatetime(u_timest(), timer);
-    full = p_deserialize(recvbuf);
-    return (full);
-}
-
-int
-e_loop(t_ping * ping, struct sockaddr_in * servaddr, int sock)
-{
-    uint8_t running;
-    long reptime;
-    uint8_t seq;
-
-    /*
-    ** set running semiglobal variable
-    ** */
-    running = 1;
-    u_setrunning(0, &running);
-    signal(SIGINT, u_handle_sigint);
-
-    reptime = 0;
-    seq = 0;
-    while (running == 1) {
-        if ((reptime + 1000) > u_longtime())
-        {
-            continue; /* ping once every second */
-        } else {
-            p_initpacket(ping->pack, seq);
-            ping->reply = e_ping(sock, servaddr, ping);
-            if (ping->reply == NULL) {
-                continue;
-            }
-            u_printpack(ping, seq);
-            reptime = u_longtime();
-            seq++;
-        }
-    }
-    return (0);
-}
-
-
-int
 e_start(char *url, t_opts * opts)
 {
     struct sockaddr_in * servaddr;
     struct addrinfo * res;
     t_pack pack;
-    int sock;
+    int sock = -1;
     struct addrinfo hints = {
         AI_CANONNAME, AF_INET, SOCK_RAW, IPPROTO_ICMP, 0, NULL, NULL, NULL
     };
@@ -228,5 +88,137 @@ e_start(char *url, t_opts * opts)
     freeaddrinfo(res);
     free(ping.reply);
     free(opts);
+    return (0);
+}
+
+int
+e_setsockets(void)
+{
+    const int hdr = 1;
+    int sockfd;
+    struct timeval rcv_timeout =
+        {1, 1};
+    (void)hdr;
+
+    rcv_timeout.tv_sec = 1;
+    rcv_timeout.tv_usec = 0;
+    if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
+    {
+        return (u_printerr("failed to create socket", "socket"));
+    }
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
+    {
+        printf("%s %d\n", strerror(errno), errno);
+        sockfd = -1;
+        return (u_printerr("failed to set socket options", "setsockopt"));
+    }
+    return (sockfd);
+}
+
+/*
+** sendto icmp header set by p_initpacket()
+** recvfrom IP and ICMP headers and deserialize them
+** t_reply->ip
+** t_reply->icmp
+ */
+t_reply *
+e_trytoreach(int sock, struct sockaddr_in * addr, t_ping * ping, int * ttl)
+{
+    socklen_t addrsize = sizeof(const struct sockaddr);
+    char recvbuf[98];
+    t_reply * full;
+    t_pack * pack = ping->pack;
+    t_time * timer = ping->timer;
+    int ret = 42;
+    struct sockaddr_in peer_addr;
+    socklen_t peer_size = sizeof(peer_addr);
+    char peer_addr_buf[INET_ADDRSTRLEN];
+    const char * peer_name_char;
+
+    ft_bzero(recvbuf, 98);
+    /* update socket with increased ttl */
+    if (setsockopt(sock, IPPROTO_IP, IP_TTL, ttl, sizeof(int)) < 0)
+    {
+        return ((t_reply*)0x0);
+    }
+
+    if (sendto(sock, pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
+        u_printerr("socket error", "sendto()");
+        return (NULL);
+    }
+    ping->sent++;
+    timer->itv = u_timest();
+
+    if ((ret = recvfrom(sock, &recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_size)) < 0) {
+        u_updatetime(u_timest(), timer);
+        return (NULL);
+    }
+    ping->received++;
+    u_updatetime(u_timest(), timer);
+    full = p_deserialize(recvbuf);
+    if (full->hdr.type != ICMP_ECHOREPLY && full->hdr.type != ICMP_TIME_EXCEEDED)
+    {
+        return (NULL);
+    }
+    else
+    {
+        peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
+        dprintf(1, "got: %s\nttl: %d\n", peer_name_char, *ttl);
+
+    }
+    return (full);
+}
+
+int
+e_loop(t_ping * ping, struct sockaddr_in * servaddr, int sock)
+{
+    uint8_t running;
+    long reptime = 0;
+    uint8_t seq;
+    int ttl = 0;
+
+    /*
+    ** set running semiglobal variable
+    ** */
+    running = 1;
+    u_setrunning(0, &running);
+    signal(SIGINT, u_handle_sigint);
+
+    seq = 0;
+    while (running == 1) {
+        if ((reptime + 1000) > u_longtime())
+        {
+            continue; /* ping once every second */
+        } else {
+            p_initpacket(ping->pack, seq);
+            ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
+            seq++;
+            ttl++;
+        }
+    }
+    return (0);
+}
+
+int
+e_output(t_ping * ping, uint8_t isstr)
+{
+    uint32_t ploss;
+    char * str = (isstr ? ping->url : ping->ipstr);
+
+    if (ping->received != 0) {
+      ploss = u_ploss(ping->sent, ping->received);
+    } else {
+        ploss = 100;
+    }
+
+    printf("\n--- %s ft_ping statistics ---\n", str);
+    dprintf(1, "%ld packets transmitted, %ld received,  %d%% packet loss\n",
+            ping->sent, ping->received, ploss);
+    if (ping->received != 0) {
+        dprintf(1,
+                "round-trip min/avg/max/mdev = %.3Lf/%.3Lf/%.3Lf/%.3Lf ms\n",
+                ping->timer->min, ping->timer->avg, ping->timer->max,
+                u_mdev(1, 1.0f));
+    }
     return (0);
 }

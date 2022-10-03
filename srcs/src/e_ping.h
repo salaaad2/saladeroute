@@ -39,5 +39,9 @@ typedef struct s_ping {
 } t_ping;
 
 int e_start(char * url, t_opts * opts);
+int e_setsockets(void);
+t_reply * e_trytoreach(int sock, struct sockaddr_in * addr, t_ping * ping, int * ttl);
+int e_loop(t_ping * ping, struct sockaddr_in * servaddr, int sock);
+int e_output(t_ping * ping, uint8_t isstr);
 
 #endif

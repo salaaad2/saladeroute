@@ -30,6 +30,7 @@ int
 p_initpacket(t_pack * pack, uint64_t seq)
 {
     uint16_t i = 0;
+    (void)seq;
 
     ft_bzero(pack, sizeof(t_pack));
 
