@@ -14,7 +14,6 @@ typedef struct s_opts {
     bool_t	textaddr;
 } t_opts;
 
-
 t_opts* u_initopts( void );
 int u_getopts(char *av[], t_opts * opts);
 

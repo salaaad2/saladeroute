@@ -1,5 +1,5 @@
 /*********************************/
-/*   FT_PING          (  //      */
+/*   FT_TRACEROUTE     (  //      */
 /*   helpers           ( )/      */
 /*   by salade         )(/       */
 /*  ________________  ( /)       */
@@ -49,13 +49,13 @@ u_setrunning(uint8_t mode, uint8_t * running)
 int
 u_help( void )
 {
-    printf("Usage\n./ft_ping [options] <destination>\n\nOptions:\n");
+    printf("Usage\n./ft_tracert [options] <destination>\n\nOptions:\n");
     printf(" -v\tverbose output\n");
     return (0);
 }
 
 int
-u_printpack(t_ping *ping, uint64_t seq)
+u_printpack(t_tracert *ping, uint64_t seq)
 {
     dprintf(1, "%ld bytes from %s: seq=%ld ttl=%d time=%.3Lf\n", sizeof(t_pack), ping->ipstr, seq, ping->reply->ip.ttl, ping->timer->lapse);
     return (0);

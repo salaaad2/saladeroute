@@ -13,6 +13,6 @@ void u_handle_sigint(int dummy);
 void u_handle_sigalrm(int dummy);
 void u_setrunning(uint8_t mode, uint8_t * running);
 int u_help( void );
-int u_printpack(t_ping *ping, uint64_t seq);
+int u_printpack(t_tracert *ping, uint64_t seq);
 
 #endif

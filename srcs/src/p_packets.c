@@ -74,10 +74,10 @@ p_deserialize(char recvbuf[])
 }
 
 /*
-** set all t_ping fields
+** set all t_tracert fields
 */
 void
-p_initping(t_ping * ping, t_time *timer, t_pack * pack, char * ipstr)
+p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack, char * ipstr)
 {
     ping->timer = timer;
     ping->pack = pack;
