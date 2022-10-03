@@ -6,7 +6,7 @@
 
 #include "u_libft.h"
 
-#include "e_ping.h"
+#include "traceroute.h"
 
 uint32_t u_ploss(uint32_t sent, uint32_t received);
 void u_handle_sigint(int dummy);

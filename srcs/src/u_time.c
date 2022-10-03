@@ -28,17 +28,6 @@ u_cmptime(long double time)
     return (time < u_timest());
 }
 
-long
-u_longtime(void)
-{
-    struct timeval	tv;
-    long			ct;
-
-    gettimeofday(&tv, NULL);
-    ct = ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
-    return (ct);
-}
-
 long double
 u_avgtime(long double time)
 {

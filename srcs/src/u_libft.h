@@ -1,7 +1,7 @@
 #ifndef U_LIBFT_H_
 #define U_LIBFT_H_
 
-#include "e_ping.h"
+#include "traceroute.h"
 
 void	ft_bzero(void *s, size_t n);
 void	*ft_memcpy(void *dst, const void *src, size_t n);

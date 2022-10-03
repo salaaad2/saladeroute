@@ -6,7 +6,7 @@
 
 #include "u_libft.h"
 
-#include "e_ping.h"
+#include "traceroute.h"
 
 int       p_initpacket(t_pack * pack, uint64_t seq);
 int16_t   p_checksum(const void *data, uint64_t size);
