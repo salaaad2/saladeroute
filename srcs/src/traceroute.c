@@ -17,6 +17,7 @@
 
 #include "traceroute.h"
 #include "p_packets.h"
+#include "u_opts.h"
 #include "u_time.h"
 #include "u_err.h"
 #include "u_helper.h"
@@ -57,11 +58,9 @@ e_start(char *url, t_opts * opts)
         } else {
             opts->textaddr = 0;
             ping.url = ipstr;
-            /* return (u_printerr("invalid address", ipstr)); */
         }
-        printf("PING %s (%s): %d data bytes\n", url, ipstr, DATA_SIZE);
     } else {
-        return (1);
+        return (u_printerr("invalid address", ipstr));
     }
 
     /*
@@ -124,17 +123,14 @@ e_setsockets(void)
 t_reply *
 e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
 {
-    socklen_t addrsize = sizeof(const struct sockaddr);
-    char recvbuf[98];
-    t_reply * full;
-    t_pack * pack = ping->pack;
-    t_time * timer = ping->timer;
-    int ret = 42;
     struct sockaddr_in peer_addr;
     socklen_t peer_size = sizeof(peer_addr);
-    char peer_addr_buf[INET_ADDRSTRLEN];
+    socklen_t addrsize = sizeof(const struct sockaddr);
+    t_reply * full;
     const char * peer_name_char;
     long double rtt;
+    char peer_addr_buf[INET_ADDRSTRLEN];
+    char recvbuf[98];
 
     ft_bzero(recvbuf, 98);
     /* update socket with increased ttl */
@@ -143,31 +139,31 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
         return ((t_reply*)0x0);
     }
 
-    timer->itv = u_timest();
-    if (sendto(sock, pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
+    ping->timer->itv = u_timest();
+    if (sendto(sock, ping->pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
         u_printerr("socket error", "sendto()");
         return (NULL);
     }
     ping->sent++;
 
-    if ((ret = recvfrom(sock, &recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_size)) < 0) {
-        u_updatetime(u_timest(), timer);
-        dprintf(1, "*\n");
+    if ((recvfrom(sock, &recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_size)) < 0) {
+        u_updatetime(u_timest(), ping->timer);
         return (NULL);
     }
-    rtt = (u_timest() - timer->itv);
+    rtt = (u_timest() - ping->timer->itv);
     ping->received++;
-    u_updatetime(u_timest(), timer);
+    u_updatetime(u_timest(), ping->timer);
     full = p_deserialize(recvbuf);
     if (full->hdr.type == ICMP_TIME_EXCEEDED)
     {
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        dprintf(1, "%d (%s) rtt: %Lf\n", *ttl, peer_name_char, rtt);
+        dprintf(1, "%d (%s) rtt: %.3Lf\n", *ttl, peer_name_char, rtt);
     }
     else if (full->hdr.type == ICMP_ECHOREPLY)
     {
+        /* this should stop the execution */
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        dprintf(1, "HIT TARGET %d (%s) rtt: %Lf\n", *ttl, peer_name_char, rtt);
+        dprintf(1, "HIT TARGET %d (%s) rtt: %.3Lf\n", *ttl, peer_name_char, rtt);
     }
     return (full);
 }
@@ -178,19 +174,30 @@ e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
     uint8_t running;
     uint8_t seq;
     int ttl = 0;
+    int probe_nb;
+    bool_t status;
 
     /*
     ** set running semiglobal variable ntoa pton
     ** */
     running = 1;
+    probe_nb = 0;
     u_setrunning(0, &running);
     signal(SIGINT, u_handle_sigint);
 
     seq = 0;
-    while (running == 1 && ttl < 80) {
-        p_initpacket(ping->pack, seq);
-        u_timest();
-        ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
+    while (running == 1 && ttl < 30) {
+        while (probe_nb < 3)
+        {
+            p_initpacket(ping->pack, seq);
+            u_timest();
+            ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
+            probe_nb++;
+            status = status & (ping->reply == NULL);
+            status = status << 1;
+        }
+        u_printsum(ttl, status);
+        probe_nb = 0;
         seq++;
         ttl++;
     }
@@ -200,18 +207,15 @@ e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
 int
 e_output(t_tracert * ping, uint8_t isstr)
 {
-    uint32_t ploss;
+    uint32_t packetloss;
     char * str = (isstr ? ping->url : ping->ipstr);
 
     if (ping->received != 0) {
-      ploss = u_ploss(ping->sent, ping->received);
+      packetloss = u_ploss(ping->sent, ping->received);
     } else {
-        ploss = 100;
+        packetloss = 100;
     }
 
-    printf("\n--- %s ft_tracert statistics ---\n", str);
-    dprintf(1, "%ld packets transmitted, %ld received,  %d%% packet loss\n",
-            ping->sent, ping->received, ploss);
     if (ping->received != 0) {
         dprintf(1,
                 "round-trip min/avg/max/mdev = %.3Lf/%.3Lf/%.3Lf/%.3Lf ms\n",

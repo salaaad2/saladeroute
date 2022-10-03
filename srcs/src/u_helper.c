@@ -60,3 +60,14 @@ u_printpack(t_tracert *ping, uint64_t seq)
     dprintf(1, "%ld bytes from %s: seq=%ld ttl=%d time=%.3Lf\n", sizeof(t_pack), ping->ipstr, seq, ping->reply->ip.ttl, ping->timer->lapse);
     return (0);
 }
+
+void
+u_printsum(int ttl, bool_t status)
+{
+    char * output;
+    sprintf(output, "%d ", ttl);
+    if (status == 0)
+    {
+        sprintf(output, "* * *\n");
+    }
+}
