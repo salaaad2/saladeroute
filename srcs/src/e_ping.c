@@ -134,6 +134,7 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_ping * ping, int * ttl)
     socklen_t peer_size = sizeof(peer_addr);
     char peer_addr_buf[INET_ADDRSTRLEN];
     const char * peer_name_char;
+    long rtt;
 
     ft_bzero(recvbuf, 98);
     /* update socket with increased ttl */
@@ -142,29 +143,31 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_ping * ping, int * ttl)
         return ((t_reply*)0x0);
     }
 
+    timer->itv = u_timest();
     if (sendto(sock, pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
         u_printerr("socket error", "sendto()");
         return (NULL);
     }
     ping->sent++;
-    timer->itv = u_timest();
 
     if ((ret = recvfrom(sock, &recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_size)) < 0) {
         u_updatetime(u_timest(), timer);
+        dprintf(1, "*\n");
         return (NULL);
     }
+    rtt = (u_timest() - timer->itv);
     ping->received++;
     u_updatetime(u_timest(), timer);
     full = p_deserialize(recvbuf);
-    if (full->hdr.type != ICMP_ECHOREPLY && full->hdr.type != ICMP_TIME_EXCEEDED)
-    {
-        return (NULL);
-    }
-    else
+    if (full->hdr.type == ICMP_TIME_EXCEEDED)
     {
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        dprintf(1, "got: %s\nttl: %d\n", peer_name_char, *ttl);
-
+        dprintf(1, "%d (%s) rtt: %lu\n", *ttl, peer_name_char, rtt);
+    }
+    else if (full->hdr.type == ICMP_ECHOREPLY)
+    {
+        peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
+        dprintf(1, "HIT TARGET %d (%s) rtt: %lu\n", *ttl, peer_name_char, rtt);
     }
     return (full);
 }
@@ -173,28 +176,23 @@ int
 e_loop(t_ping * ping, struct sockaddr_in * servaddr, int sock)
 {
     uint8_t running;
-    long reptime = 0;
     uint8_t seq;
     int ttl = 0;
 
     /*
-    ** set running semiglobal variable
+    ** set running semiglobal variable ntoa pton
     ** */
     running = 1;
     u_setrunning(0, &running);
     signal(SIGINT, u_handle_sigint);
 
     seq = 0;
-    while (running == 1) {
-        if ((reptime + 1000) > u_longtime())
-        {
-            continue; /* ping once every second */
-        } else {
-            p_initpacket(ping->pack, seq);
-            ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
-            seq++;
-            ttl++;
-        }
+    while (running == 1 && ttl < 80) {
+        p_initpacket(ping->pack, seq);
+        u_timest();
+        ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
+        seq++;
+        ttl++;
     }
     return (0);
 }
