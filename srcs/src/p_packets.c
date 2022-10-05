@@ -27,10 +27,9 @@ p_checksum(const void *data, size_t size)
 }
 
 int
-p_initpacket(t_pack * pack, uint64_t seq)
+p_initpacket(t_pack * pack)
 {
     uint16_t i = 0;
-    (void)seq;
 
     ft_bzero(pack, sizeof(t_pack));
 

@@ -159,6 +159,7 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
     else if (full->hdr.type == ICMP_ECHOREPLY)
     {
         /* this should stop the execution */
+        ping->reached = 1;
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
         dprintf(1, "HIT TARGET %d (%s) rtt: %.3Lf\n", *ttl, peer_name_char, rtt);
     }
@@ -168,39 +169,32 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
 int
 e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
 {
-    uint8_t running;
-    uint8_t seq;
-    int ttl = 0;
+    int ttl;
     int probe_nb;
     bool_t status;
 
     /*
     ** set running semiglobal variable ntoa pton
     ** */
-    running = 1;
     probe_nb = 0;
-    u_setrunning(0, &running);
+    u_setrunning(0, &ping->reached);
     signal(SIGINT, u_handle_sigint);
 
-    seq = 0;
+    ttl = 0;
     printf("start loop\n");
-    while (running == 1 && ttl >= 0 && ttl < 30) {
+    while (ping->reached == 0 && ttl >= 0 && ttl < 30) {
         printf("new probes\n");
         while (probe_nb < 3)
         {
             printf("probe_nb [%d] ttl:[%d]\n", probe_nb, ttl);
             /* this should be parallelized but there is no suitable function in the subject :/ */
-            p_initpacket(ping->pack, seq);
+            p_initpacket(ping->pack);
             u_timest();
             ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
             probe_nb++;
             status = status & (ping->reply == NULL);
             status = status << 1;
             /* copy full struct */
-        }
-        if (ping->reached == 1)
-        {
-            running = 0;
         }
         probe_nb = 0;
         seq++;

@@ -8,7 +8,7 @@
 
 #include "traceroute.h"
 
-int       p_initpacket(t_pack * pack, uint64_t seq);
+int       p_initpacket(t_pack * pack);
 int16_t   p_checksum(const void *data, uint64_t size);
 t_reply * p_deserialize(char recvbuf[]);
 void      p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack, char * ipstr);
