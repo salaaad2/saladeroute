@@ -65,7 +65,6 @@ e_start(char *url, t_opts * opts)
 
     /*
     ** socket() and setsockopt()
-    ** @ret > 0
     ** */
     sock = e_setsockets();
     if (sock < 0) {
@@ -80,10 +79,6 @@ e_start(char *url, t_opts * opts)
     p_init_main_structs(&ping, &timer, &pack, ipstr);
     e_loop(&ping, servaddr, sock);
 
-    /*
-    ** print stats when exiting
-    ** */
-    e_output(&ping, opts->textaddr);
     freeaddrinfo(res);
     free(ping.reply);
     free(opts);
@@ -136,6 +131,7 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
     /* update socket with increased ttl */
     if (setsockopt(sock, IPPROTO_IP, IP_TTL, ttl, sizeof(int)) < 0)
     {
+        u_printerr("failed to set ttl", "ttl");
         return ((t_reply*)0x0);
     }
 
@@ -151,6 +147,7 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
         return (NULL);
     }
     rtt = (u_timest() - ping->timer->itv);
+    ping->timer->rtt = rtt;
     ping->received++;
     u_updatetime(u_timest(), ping->timer);
     full = p_deserialize(recvbuf);
@@ -186,41 +183,28 @@ e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
     signal(SIGINT, u_handle_sigint);
 
     seq = 0;
-    while (running == 1 && ttl < 30) {
+    printf("start loop\n");
+    while (running == 1 && ttl >= 0 && ttl < 30) {
+        printf("new probes\n");
         while (probe_nb < 3)
         {
+            printf("probe_nb [%d] ttl:[%d]\n", probe_nb, ttl);
+            /* this should be parallelized but there is no suitable function in the subject :/ */
             p_initpacket(ping->pack, seq);
             u_timest();
             ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
             probe_nb++;
             status = status & (ping->reply == NULL);
             status = status << 1;
+            /* copy full struct */
         }
-        u_printsum(ttl, status);
+        if (ping->reached == 1)
+        {
+            running = 0;
+        }
         probe_nb = 0;
         seq++;
         ttl++;
-    }
-    return (0);
-}
-
-int
-e_output(t_tracert * ping, uint8_t isstr)
-{
-    uint32_t packetloss;
-    char * str = (isstr ? ping->url : ping->ipstr);
-
-    if (ping->received != 0) {
-      packetloss = u_ploss(ping->sent, ping->received);
-    } else {
-        packetloss = 100;
-    }
-
-    if (ping->received != 0) {
-        dprintf(1,
-                "round-trip min/avg/max/mdev = %.3Lf/%.3Lf/%.3Lf/%.3Lf ms\n",
-                ping->timer->min, ping->timer->avg, ping->timer->max,
-                u_mdev(1, 1.0f));
     }
     return (0);
 }

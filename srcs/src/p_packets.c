@@ -84,5 +84,6 @@ p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack, char * ipstr
     ping->reply = NULL;
     ping->sent = 0;
     ping->received = 0;                         \
+    ping->reached = 0;
     ft_memcpy(ping->ipstr, ipstr, 15);
 }

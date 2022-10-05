@@ -7,6 +7,7 @@
 /*********************************/
 
 #include "u_helper.h"
+#include "traceroute.h"
 
 #include <stdio.h>
 
@@ -54,20 +55,20 @@ u_help( void )
     return (0);
 }
 
-int
-u_printpack(t_tracert *ping, uint64_t seq)
-{
-    dprintf(1, "%ld bytes from %s: seq=%ld ttl=%d time=%.3Lf\n", sizeof(t_pack), ping->ipstr, seq, ping->reply->ip.ttl, ping->timer->lapse);
-    return (0);
-}
-
 void
-u_printsum(int ttl, bool_t status)
+u_printsum(int ttl, bool_t status, t_tracert replies[3])
 {
-    char * output;
+    char output[96];
+
     sprintf(output, "%d ", ttl);
     if (status == 0)
     {
         sprintf(output, "* * *\n");
     }
+    else if (status == 11)
+    {
+        sprintf(output, "dummy_address, %.3Lfms %.3Lfms %.3Lfms\n", replies[0].timer->rtt, replies[1].timer->rtt, replies[2].timer->rtt);
+    }
+
+    dprintf(1, "%s\n", output);
 }

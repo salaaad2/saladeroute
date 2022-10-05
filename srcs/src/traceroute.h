@@ -5,6 +5,7 @@
 #include "u_opts.h"
 
 #include <netinet/ip_icmp.h>
+#include <stdint.h>
 
 
 #define IP_SIZE sizeof(struct icmphdr)
@@ -24,7 +25,7 @@ typedef struct s_reply {
 } t_reply;
 
 typedef struct s_time {
-    long double itv, ntv, avg, lapse, min, max, mdev, total;
+    long double itv, ntv, avg, lapse, min, max, mdev, total, rtt;
 } t_time ;
 
 typedef struct s_ping {
@@ -35,12 +36,12 @@ typedef struct s_ping {
     unsigned long received;
     char ipstr[16];
     char * url;
+    uint8_t reached;
 } t_tracert;
 
 int e_start(char * url, t_opts * opts);
 int e_setsockets(void);
 t_reply * e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl);
 int e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock);
-int e_output(t_tracert * ping, uint8_t isstr);
 
 #endif
