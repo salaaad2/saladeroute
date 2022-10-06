@@ -37,7 +37,7 @@ p_initpacket(t_pack * pack)
     pack->hdr.code = 0;
     pack->hdr.checksum = 0;
     pack->hdr.un.echo.id = getpid();
-    pack->hdr.un.echo.sequence = seq;
+    pack->hdr.un.echo.sequence = 0;
 
     while (i < (DATA_SIZE - 1))
     {

@@ -8,7 +8,9 @@
 
 #include "u_helper.h"
 #include "traceroute.h"
+#include "u_libft.h"
 
+#include <stdint.h>
 #include <stdio.h>
 
 uint32_t
@@ -56,18 +58,19 @@ u_help( void )
 }
 
 void
-u_printsum(int ttl, bool_t status, t_tracert replies[3])
+u_printsum(int ttl, uint8_t status, long double rtts[])
 {
     char output[96];
+    int len;
 
-    sprintf(output, "%d ", ttl);
+    len = sprintf(output, "%d ", ttl);
     if (status == 0)
     {
-        sprintf(output, "* * *\n");
+        len = sprintf(output + len, "* * *");
     }
-    else if (status == 11)
+    else
     {
-        sprintf(output, "dummy_address, %.3Lfms %.3Lfms %.3Lfms\n", replies[0].timer->rtt, replies[1].timer->rtt, replies[2].timer->rtt);
+        len = sprintf(output + len, "dummy_address, %.3Lfms %.3Lfms %.3Lfms", rtts[0], rtts[1], rtts[2]);
     }
 
     dprintf(1, "%s\n", output);

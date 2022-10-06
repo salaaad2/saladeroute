@@ -8,6 +8,7 @@
 
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -154,14 +155,13 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
     if (full->hdr.type == ICMP_TIME_EXCEEDED)
     {
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        dprintf(1, "%d (%s) rtt: %.3Lf\n", *ttl, peer_name_char, rtt);
     }
     else if (full->hdr.type == ICMP_ECHOREPLY)
     {
         /* this should stop the execution */
         ping->reached = 1;
         peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        dprintf(1, "HIT TARGET %d (%s) rtt: %.3Lf\n", *ttl, peer_name_char, rtt);
+        (void)peer_name_char;
     }
     return (full);
 }
@@ -169,9 +169,10 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
 int
 e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
 {
+    long double rtts[3];
     int ttl;
     int probe_nb;
-    bool_t status;
+    uint8_t status;
 
     /*
     ** set running semiglobal variable ntoa pton
@@ -180,24 +181,26 @@ e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
     u_setrunning(0, &ping->reached);
     signal(SIGINT, u_handle_sigint);
 
-    ttl = 0;
-    printf("start loop\n");
+    ttl = 1;
     while (ping->reached == 0 && ttl >= 0 && ttl < 30) {
-        printf("new probes\n");
         while (probe_nb < 3)
         {
-            printf("probe_nb [%d] ttl:[%d]\n", probe_nb, ttl);
             /* this should be parallelized but there is no suitable function in the subject :/ */
             p_initpacket(ping->pack);
             u_timest();
             ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
+            rtts[probe_nb] = ping->timer->rtt;
             probe_nb++;
-            status = status & (ping->reply == NULL);
-            status = status << 1;
+            if (ping->reply != NULL)
+            {
+                status |= 1;
+                status = (status << 1);
+            }
             /* copy full struct */
         }
+        u_printsum(ttl, status, rtts);
+        status = 0;
         probe_nb = 0;
-        seq++;
         ttl++;
     }
     return (0);
