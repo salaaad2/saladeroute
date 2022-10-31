@@ -152,7 +152,9 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * tracert, int * ttl
     full = p_deserialize(recvbuf);
     if (full->hdr.type == ICMP_ECHOREPLY)
     {
-        /* this should stop the execution */
+        /*
+         * reached destination, stop execution
+         **/
         tracert->reached = 1;
     }
     tracert->url = strdup(inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf)));
