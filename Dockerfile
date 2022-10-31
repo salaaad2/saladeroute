@@ -1,12 +1,12 @@
 FROM alpine:latest
-    MAINTAINER John Doe <john@doe.com>
+    MAINTAINER Filemon <qwe@asd.com>
 
-RUN mkdir -p /opt/ft_ping/
+RUN mkdir -p /opt/ft_traceroute/
 
 RUN apk update && apk upgrade
 
 RUN apk add --no-cache bash make cmake alpine-sdk strace
 
-WORKDIR /opt/ft_ping
+WORKDIR /opt/ft_traceroute
 
 ENTRYPOINT tail -f /dev/null

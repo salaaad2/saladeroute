@@ -10,6 +10,7 @@
 #include <netinet/ip_icmp.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -20,7 +21,6 @@
 #include "p_packets.h"
 #include "u_opts.h"
 #include "u_time.h"
-#include "u_err.h"
 #include "u_helper.h"
 #include "u_libft.h"
 
@@ -37,7 +37,7 @@ e_start(char *url, t_opts * opts)
     char ipstr[4096];
     void * addr;
     t_time timer;
-    t_tracert ping;
+    t_tracert tracert;
 
     /*
     ** DNS resolution and address settings happen here
@@ -52,14 +52,15 @@ e_start(char *url, t_opts * opts)
         inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
         if (ft_strcmp(ipstr, url)) {
             opts->textaddr = 1;
-            ping.url = url;
+            tracert.url = url;
             /*
             ** reverse hostname if address is not in ipv4 format ???
              */
         } else {
             opts->textaddr = 0;
-            ping.url = ipstr;
+            tracert.url = ipstr;
         }
+        printf("traceroute to %s (%s): 30 hops max, %d byte packets\n", url, ipstr, DATA_SIZE);
     } else {
         return (u_printerr("invalid address", ipstr));
     }
@@ -73,15 +74,16 @@ e_start(char *url, t_opts * opts)
         return (1);
     }
 
-    /* loop : seq is incremented on each ping/pong.
-     ** time also needs to be managed each time a ping happens
+    /*
+     ** init timers and structures; then send them to e_loop(), where
+     ** ttl is incremented to actually get the route
      ** */
     u_inittimer(&timer);
-    p_init_main_structs(&ping, &timer, &pack, ipstr);
-    e_loop(&ping, servaddr, sock);
+    p_init_main_structs(&tracert, &timer, &pack, ipstr);
+    e_loop(&tracert, servaddr, sock);
 
     freeaddrinfo(res);
-    free(ping.reply);
+    free(tracert.reply);
     free(opts);
     return (0);
 }
@@ -89,11 +91,9 @@ e_start(char *url, t_opts * opts)
 int
 e_setsockets(void)
 {
-    const int hdr = 1;
     int sockfd;
     struct timeval rcv_timeout =
         {1, 1};
-    (void)hdr;
 
     rcv_timeout.tv_sec = 1;
     rcv_timeout.tv_usec = 0;
@@ -103,7 +103,6 @@ e_setsockets(void)
     }
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout, sizeof(rcv_timeout)) != 0)
     {
-        printf("%s %d\n", strerror(errno), errno);
         sockfd = -1;
         return (u_printerr("failed to set socket options", "setsockopt"));
     }
@@ -117,13 +116,12 @@ e_setsockets(void)
 ** t_reply->icmp
  */
 t_reply *
-e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
+e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * tracert, int * ttl)
 {
     struct sockaddr_in peer_addr;
     socklen_t peer_size = sizeof(peer_addr);
     socklen_t addrsize = sizeof(const struct sockaddr);
     t_reply * full;
-    const char * peer_name_char;
     long double rtt;
     char peer_addr_buf[INET_ADDRSTRLEN];
     char recvbuf[98];
@@ -136,71 +134,78 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl)
         return ((t_reply*)0x0);
     }
 
-    ping->timer->itv = u_timest();
-    if (sendto(sock, ping->pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
+    tracert->timer->itv = u_timest();
+    if (sendto(sock, tracert->pack, PACK_SIZE, 0, (struct sockaddr *)addr, addrsize) < 0) {
         u_printerr("socket error", "sendto()");
         return (NULL);
     }
-    ping->sent++;
+    tracert->sent++;
 
     if ((recvfrom(sock, &recvbuf, PACK_SIZE + IP_SIZE, 0, (struct sockaddr *)&peer_addr, &peer_size)) < 0) {
-        u_updatetime(u_timest(), ping->timer);
+        u_updatetime(u_timest(), tracert->timer);
         return (NULL);
     }
-    rtt = (u_timest() - ping->timer->itv);
-    ping->timer->rtt = rtt;
-    ping->received++;
-    u_updatetime(u_timest(), ping->timer);
+    rtt = (u_timest() - tracert->timer->itv);
+    tracert->timer->rtt = rtt;
+    tracert->received++;
+    u_updatetime(u_timest(), tracert->timer);
     full = p_deserialize(recvbuf);
-    if (full->hdr.type == ICMP_TIME_EXCEEDED)
-    {
-        peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-    }
-    else if (full->hdr.type == ICMP_ECHOREPLY)
+    if (full->hdr.type == ICMP_ECHOREPLY)
     {
         /* this should stop the execution */
-        ping->reached = 1;
-        peer_name_char = inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf));
-        (void)peer_name_char;
+        tracert->reached = 1;
     }
+    tracert->url = strdup(inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf)));
     return (full);
 }
 
 int
-e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock)
+e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, int sock)
 {
-    long double rtts[3];
     int ttl;
     int probe_nb;
-    uint8_t status;
+    char output[96];
+    int len;
+    bool_t print_addr;
 
     /*
-    ** set running semiglobal variable ntoa pton
+    ** set running semiglobal variable
     ** */
+    print_addr = 0;
     probe_nb = 0;
-    u_setrunning(0, &ping->reached);
+    u_setrunning(0, &tracert->reached);
     signal(SIGINT, u_handle_sigint);
 
     ttl = 1;
-    while (ping->reached == 0 && ttl >= 0 && ttl < 30) {
+    while (tracert->reached == 0 && ttl >= 0 && ttl < 30) {
+        len = sprintf(output, "%-3d", ttl);
         while (probe_nb < 3)
         {
             /* this should be parallelized but there is no suitable function in the subject :/ */
-            p_initpacket(ping->pack);
+            p_initpacket(tracert->pack);
             u_timest();
-            ping->reply = e_trytoreach(sock, servaddr, ping, &ttl);
-            rtts[probe_nb] = ping->timer->rtt;
+            tracert->reply = e_trytoreach(sock, servaddr, tracert, &ttl);
             probe_nb++;
-            if (ping->reply != NULL)
+            if (tracert->reply != NULL)
             {
-                status |= 1;
-                status = (status << 1);
+                if (!print_addr)
+                {
+                    len += sprintf(output + len, " %s, ", tracert->url);
+                    print_addr = 1;
+                }
+                len += sprintf(output + len, " %.3Lfms ", tracert->timer->rtt);
+            }
+            else
+            {
+                len += sprintf(output + len, " * ");
             }
             /* copy full struct */
         }
-        u_printsum(ttl, status, rtts);
-        status = 0;
+        dprintf(1, "%s\n", output);
+        free(tracert->url);
+        tracert->url = NULL;
         probe_nb = 0;
+        print_addr = 0;
         ttl++;
     }
     return (0);

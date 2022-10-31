@@ -11,7 +11,6 @@
 
 #include "u_libft.h"
 #include "u_opts.h"
-#include "u_err.h"
 #include "u_helper.h"
 
 #include "traceroute.h"

@@ -19,7 +19,6 @@ SRCS_NAME		 += main
 SRCS_NAME		 += p_packets
 SRCS_NAME		 += u_time
 SRCS_NAME		 += u_opts
-SRCS_NAME		 += u_err
 SRCS_NAME		 += u_helper
 SRCS_NAME		 += u_libft
 #------------------------------------------------------------------------------#

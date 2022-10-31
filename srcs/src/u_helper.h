@@ -13,6 +13,6 @@ void u_handle_sigint(int dummy);
 void u_handle_sigalrm(int dummy);
 void u_setrunning(uint8_t mode, uint8_t * running);
 int  u_help(void);
-void u_printsum(int ttl, uint8_t status, long double replies[]);
+int  u_printerr(char * reason, char * value);
 
 #endif

@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 uint32_t
 u_ploss(uint32_t sent, uint32_t received)
@@ -52,26 +53,14 @@ u_setrunning(uint8_t mode, uint8_t * running)
 int
 u_help( void )
 {
-    printf("Usage\n./ft_tracert [options] <destination>\n\nOptions:\n");
+    printf("Usage\n./ft_traceroute [options] <destination>\n\nOptions:\n");
     printf(" -v\tverbose output\n");
     return (0);
 }
 
-void
-u_printsum(int ttl, uint8_t status, long double rtts[])
+int
+u_printerr(char * reason, char * value)
 {
-    char output[96];
-    int len;
-
-    len = sprintf(output, "%d ", ttl);
-    if (status == 0)
-    {
-        len = sprintf(output + len, "* * *");
-    }
-    else
-    {
-        len = sprintf(output + len, "dummy_address, %.3Lfms %.3Lfms %.3Lfms", rtts[0], rtts[1], rtts[2]);
-    }
-
-    dprintf(1, "%s\n", output);
+    dprintf(2, "ft_tracert: %s: %s\n", reason, value);
+    return (-1);
 }
