@@ -34,14 +34,13 @@ typedef struct s_ping {
     t_reply * reply;
     unsigned long sent;
     unsigned long received;
-    char ipstr[16];
-    char * url;
-    uint8_t reached;
+    char url[sizeof "255.255.255.255"];
+    bool_t reached;
 } t_tracert;
 
 int e_start(char * url, t_opts * opts);
 int e_setsockets(void);
 t_reply * e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * ping, int * ttl);
-int e_loop(t_tracert * ping, struct sockaddr_in * servaddr, int sock);
+int e_loop(t_tracert * ping, struct sockaddr_in * servaddr, t_opts * options, int sock);
 
 #endif

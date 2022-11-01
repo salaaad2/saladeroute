@@ -33,28 +33,29 @@ u_handle_sigint(int dummy)
 }
 
 void
-u_handle_sigalrm(int dummy)
+u_setrunning(bool_t mode, bool_t * running)
 {
-    (void)dummy;
-}
-
-void
-u_setrunning(uint8_t mode, uint8_t * running)
-{
-    static uint8_t * r;
+    static bool_t * r;
 
     if (mode == 0) {
         r = running;
     } else {
-        *r = 0;
+        /* r is tracert->reached, set it to true to stop the execution */
+        *r = TRUE;
     }
 }
 
 int
 u_help( void )
 {
-    printf("Usage\n./ft_traceroute [options] <destination>\n\nOptions:\n");
-    printf(" -v\tverbose output\n");
+    char output[4096];
+    int len;
+
+    bzero(output, sizeof(output));
+    len =  sprintf(output, "Usage\n  ./ft_traceroute [options] <destination>\n\nOptions:\n");
+    len += sprintf(output + len, "  -v\tverbose output\n");
+    len += sprintf(output + len, "  -m\tmaximum hops\n");
+    puts(output);
     return (0);
 }
 

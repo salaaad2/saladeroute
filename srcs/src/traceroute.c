@@ -52,13 +52,13 @@ e_start(char *url, t_opts * opts)
         inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
         if (ft_strcmp(ipstr, url)) {
             opts->textaddr = 1;
-            tracert.url = url;
+            strcpy(tracert.url, url);
             /*
             ** reverse hostname if address is not in ipv4 format ???
              */
         } else {
             opts->textaddr = 0;
-            tracert.url = ipstr;
+            strcpy(tracert.url, ipstr);
         }
         printf("traceroute to %s (%s): 30 hops max, %d byte packets\n", url, ipstr, DATA_SIZE);
     } else {
@@ -79,8 +79,8 @@ e_start(char *url, t_opts * opts)
      ** ttl is incremented to actually get the route
      ** */
     u_inittimer(&timer);
-    p_init_main_structs(&tracert, &timer, &pack, ipstr);
-    e_loop(&tracert, servaddr, sock);
+    p_init_main_structs(&tracert, &timer, &pack);
+    e_loop(&tracert, servaddr, sock, opts);
 
     freeaddrinfo(res);
     free(tracert.reply);
@@ -157,12 +157,12 @@ e_trytoreach(int sock, struct sockaddr_in * addr, t_tracert * tracert, int * ttl
          **/
         tracert->reached = 1;
     }
-    tracert->url = strdup(inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf)));
+    strcpy(tracert->url, inet_ntop(AF_INET, &peer_addr.sin_addr, peer_addr_buf, sizeof(peer_addr_buf)));
     return (full);
 }
 
 int
-e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, int sock)
+e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int sock)
 {
     int ttl;
     int probe_nb;
@@ -173,13 +173,12 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, int sock)
     /*
     ** set running semiglobal variable
     ** */
-    print_addr = 0;
+    print_addr = FALSE;
     probe_nb = 0;
     u_setrunning(0, &tracert->reached);
     signal(SIGINT, u_handle_sigint);
-
     ttl = 1;
-    while (tracert->reached == 0 && ttl >= 0 && ttl < 30) {
+    while (tracert->reached == 0 && ttl < options->max_hops) {
         len = sprintf(output, "%-3d", ttl);
         while (probe_nb < 3)
         {
@@ -192,8 +191,8 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, int sock)
             {
                 if (!print_addr)
                 {
-                    len += sprintf(output + len, " %s, ", tracert->url);
-                    print_addr = 1;
+                    len += sprintf(output + len, " %s ", tracert->url);
+                    print_addr = TRUE;
                 }
                 len += sprintf(output + len, " %.3Lfms ", tracert->timer->rtt);
             }
@@ -204,8 +203,7 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, int sock)
             /* copy full struct */
         }
         dprintf(1, "%s\n", output);
-        free(tracert->url);
-        tracert->url = NULL;
+        tracert->url[0] = '\0';
         probe_nb = 0;
         print_addr = 0;
         ttl++;

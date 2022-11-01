@@ -9,7 +9,6 @@
 long double	u_timest(void);
 long double	u_cmptime(long double time);
 long double	u_avgtime(long double time);
-long double	u_mdev(uint8_t mode, long double time);
 int	u_updatetime(long double val, t_time * timer);
 void	u_inittimer(t_time * timer);
 

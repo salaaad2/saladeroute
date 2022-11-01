@@ -49,6 +49,7 @@ main(int ac, char *av[])
     }
     if (opts->help == 1)
     {
+        free(opts);
         return (u_help());
     } else if (url == NULL) {
         u_printerr("usage error", "Destination address required");

@@ -76,7 +76,7 @@ p_deserialize(char recvbuf[])
 ** set all t_tracert fields
 */
 void
-p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack, char * ipstr)
+p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack)
 {
     ping->timer = timer;
     ping->pack = pack;
@@ -84,5 +84,4 @@ p_init_main_structs(t_tracert * ping, t_time *timer, t_pack * pack, char * ipstr
     ping->sent = 0;
     ping->received = 0;                         \
     ping->reached = 0;
-    ft_memcpy(ping->ipstr, ipstr, 15);
 }
