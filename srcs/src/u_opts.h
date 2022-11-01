@@ -24,6 +24,6 @@ typedef struct s_opts {
 } t_opts;
 
 t_opts* u_initopts( void );
-int u_getopts(char *av[], t_opts * opts);
+int u_getopts(char *av[], int index, t_opts * opts);
 
 #endif

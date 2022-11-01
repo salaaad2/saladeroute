@@ -54,7 +54,7 @@ u_help( void )
     bzero(output, sizeof(output));
     len =  sprintf(output, "Usage\n  ./ft_traceroute [options] <destination>\n\nOptions:\n");
     len += sprintf(output + len, "  -v\tverbose output\n");
-    len += sprintf(output + len, "  -m\tmaximum hops\n");
+    len += sprintf(output + len, "  -m <hops>\tmaximum hops\n");
     puts(output);
     return (0);
 }
@@ -62,6 +62,6 @@ u_help( void )
 int
 u_printerr(char * reason, char * value)
 {
-    dprintf(2, "ft_tracert: %s: %s\n", reason, value);
+    dprintf(2, "ft_traceroute: %s: %s\n", reason, value);
     return (-1);
 }

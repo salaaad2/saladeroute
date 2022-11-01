@@ -60,7 +60,7 @@ e_start(char *url, t_opts * opts)
             opts->textaddr = 0;
             strcpy(tracert.url, ipstr);
         }
-        printf("traceroute to %s (%s): 30 hops max, %d byte packets\n", url, ipstr, DATA_SIZE);
+        printf("traceroute to %s (%s): %d hops max, %d byte packets\n", url, ipstr, opts->max_hops, DATA_SIZE);
     } else {
         return (u_printerr("invalid address", ipstr));
     }
@@ -80,7 +80,7 @@ e_start(char *url, t_opts * opts)
      ** */
     u_inittimer(&timer);
     p_init_main_structs(&tracert, &timer, &pack);
-    e_loop(&tracert, servaddr, sock, opts);
+    e_loop(&tracert, servaddr, opts, sock);
 
     freeaddrinfo(res);
     free(tracert.reply);

@@ -7,6 +7,7 @@
 /*********************************/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "u_opts.h"
 
 t_opts *
@@ -23,30 +24,30 @@ u_initopts( void ) {
 }
 
 int
-u_getopts(char *av[], t_opts *opts) {
-    int i, j;
+u_getopts(char *av[], int index, t_opts *opts) {
+    int opt_hops;
+    char *s;
     char c;
 
-    i = 1;
-    j = -1;
-    while (av[i][++j])
-    {
-        c = av[i][j];
-        if (c == 'v')
-            opts->verbose = 1;
-        else if (c == 'h')
-            opts->help = 1;
-        else if (c == 'm')
-        {
-            if (av[i + 1] != NULL)
+    s = av[index];
+    c = s[1];
+    switch (c) {
+        case 'v':
+            opts->verbose = TRUE;
+            break;
+        case 'h':
+            opts->help = TRUE;
+            break;
+        case 'm':
+            if (av[index + 1] != NULL)
             {
-                int opt_hops = atoi(av[i + 1]);
+                opt_hops = atoi(av[index + 1]);
                 if (opt_hops != 0)
                 {
                     opts->max_hops = opt_hops;
                 }
             }
-        }
+            break;
     }
-    return (opts->noopt);
+    return (0);
 }

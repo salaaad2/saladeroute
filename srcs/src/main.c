@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "u_libft.h"
 #include "u_opts.h"
@@ -34,15 +35,13 @@ main(int ac, char *av[])
     opts = u_initopts();
     while (i < ac)
     {
+        printf("arg: %s\n", av[i]);
         if (av[i][0] == '-') {
-            u_getopts(av, opts);
+            bool_t skip = u_getopts(av, i, opts);
+            i = (skip) ? i + 1 : i;
         } else {
             if (url == NULL) {
                 url = av[i];
-            } else {
-                return (
-                    u_printerr("usage error", "Destination address required")
-                    );
             }
         }
         i++;
@@ -53,6 +52,8 @@ main(int ac, char *av[])
         return (u_help());
     } else if (url == NULL) {
         u_printerr("usage error", "Destination address required");
+    } else if (opts->max_hops == 1) {
+        u_printerr("usage error", "<max_hops> should be bigger than 1");
     } else {
         return (
             e_start(url, opts)
