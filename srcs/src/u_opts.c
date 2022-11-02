@@ -15,7 +15,9 @@ u_initopts( void ) {
     t_opts * ret = (t_opts*)malloc(sizeof(t_opts));
 
     if (ret != NULL) {
+        ret->nqueries = 3;
         ret->max_hops = 30;
+        ret->seq = -1;
         ret->verbose = 0;
         ret->help = 0;
         ret->textaddr = 0;
@@ -25,7 +27,7 @@ u_initopts( void ) {
 
 int
 u_getopts(char *av[], int index, t_opts *opts) {
-    int opt_hops;
+    int opt_hops, opt_nqueries, opt_seq;
     char *s;
     char c;
 
@@ -45,6 +47,26 @@ u_getopts(char *av[], int index, t_opts *opts) {
                 if (opt_hops != 0)
                 {
                     opts->max_hops = opt_hops;
+                }
+            }
+            break;
+        case 'q':
+            if (av[index + 1] != NULL)
+            {
+                opt_nqueries = atoi(av[index + 1]);
+                if (opt_nqueries != 0)
+                {
+                    opts->nqueries = opt_nqueries;
+                }
+            }
+            break;
+        case 'p':
+            if (av[index + 1] != NULL)
+            {
+                opt_seq = atoi(av[index + 1]);
+                if (opt_seq != 0)
+                {
+                    opts->seq = opt_seq;
                 }
             }
             break;

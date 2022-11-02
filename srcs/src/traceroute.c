@@ -84,7 +84,6 @@ e_start(char *url, t_opts * opts)
 
     freeaddrinfo(res);
     free(tracert.reply);
-    free(opts);
     return (0);
 }
 
@@ -166,8 +165,9 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int
 {
     int ttl;
     int probe_nb;
-    char output[96];
     int len;
+    int seq;
+    char output[256];
     bool_t print_addr;
 
     /*
@@ -175,15 +175,16 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int
     ** */
     print_addr = FALSE;
     probe_nb = 0;
+    seq = (options->seq != -1) ? options->seq : 0;
     u_setrunning(0, &tracert->reached);
     signal(SIGINT, u_handle_sigint);
     ttl = 1;
     while (tracert->reached == 0 && ttl <= options->max_hops) {
         len = sprintf(output, "%-3d", ttl);
-        while (probe_nb < 3)
+        while (probe_nb < options->nqueries)
         {
             /* this should be parallelized but there is no suitable function in the subject :/ */
-            p_initpacket(tracert->pack);
+            p_initpacket(tracert->pack, seq);
             u_timest();
             tracert->reply = e_trytoreach(sock, servaddr, tracert, &ttl);
             probe_nb++;
@@ -202,6 +203,7 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int
             }
             /* copy full struct */
         }
+        seq++;
         dprintf(1, "%s\n", output);
         tracert->url[0] = '\0';
         probe_nb = 0;

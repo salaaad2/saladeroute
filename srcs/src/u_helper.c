@@ -55,6 +55,8 @@ u_help( void )
     len =  sprintf(output, "Usage\n  ./ft_traceroute [options] <destination>\n\nOptions:\n");
     len += sprintf(output + len, "  -v\tverbose output\n");
     len += sprintf(output + len, "  -m <hops>\tmaximum hops\n");
+    len += sprintf(output + len, "  -q <nqueries>\tnumber of queries per hop\n");
+    len += sprintf(output + len, "  -p <sequence_value>\tICMP sequence value, incremented by hop\n");
     puts(output);
     return (0);
 }

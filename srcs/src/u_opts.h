@@ -17,6 +17,8 @@ typedef unsigned char bool_t;
 
 typedef struct s_opts {
     int	max_hops;
+    int	nqueries;
+    int	seq;
     bool_t	verbose;
     bool_t	help;
     bool_t	noopt;

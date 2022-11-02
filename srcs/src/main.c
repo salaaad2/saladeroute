@@ -49,15 +49,15 @@ main(int ac, char *av[])
     if (opts->help == 1)
     {
         free(opts);
-        return (u_help());
+        u_help();
     } else if (url == NULL) {
         u_printerr("usage error", "Destination address required");
     } else if (opts->max_hops == 1) {
         u_printerr("usage error", "<max_hops> should be bigger than 1");
+    } else if (opts->nqueries > 10) {
+        u_printerr("usage error", "<nqueries> should be smaller than 10");
     } else {
-        return (
-            e_start(url, opts)
-        );
+        e_start(url, opts);
     }
     free(opts);
     return (0);
