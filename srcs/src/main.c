@@ -22,6 +22,7 @@ main(int ac, char *av[])
     char * url;
     t_opts * opts;
     int i;
+    int status;
 
     if (getuid() != 0)
     {
@@ -35,10 +36,9 @@ main(int ac, char *av[])
     opts = u_initopts();
     while (i < ac)
     {
-        printf("arg: %s\n", av[i]);
         if (av[i][0] == '-') {
-            bool_t skip = u_getopts(av, i, opts);
-            i = (skip) ? i + 1 : i;
+            status = u_getopts(av, i, opts);
+            i = (status) ? i + 1 : i;
         } else {
             if (url == NULL) {
                 url = av[i];

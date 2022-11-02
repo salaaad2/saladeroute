@@ -178,7 +178,7 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int
     u_setrunning(0, &tracert->reached);
     signal(SIGINT, u_handle_sigint);
     ttl = 1;
-    while (tracert->reached == 0 && ttl < options->max_hops) {
+    while (tracert->reached == 0 && ttl <= options->max_hops) {
         len = sprintf(output, "%-3d", ttl);
         while (probe_nb < 3)
         {
