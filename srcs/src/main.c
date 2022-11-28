@@ -38,7 +38,13 @@ main(int ac, char *av[])
     {
         if (av[i][0] == '-') {
             status = u_getopts(av, i, opts);
-            i = (status) ? i + 1 : i;
+            if (status == -1)
+            {
+                u_printerr("usage error", av[i]);
+                return (1);
+            } else if (status == 1) {
+                i += 1;
+            }
         } else {
             if (url == NULL) {
                 url = av[i];
@@ -48,14 +54,15 @@ main(int ac, char *av[])
     }
     if (opts->help == 1)
     {
-        free(opts);
         u_help();
     } else if (url == NULL) {
         u_printerr("usage error", "Destination address required");
-    } else if (opts->max_hops == 1) {
+    } else if (opts->max_hops <= 1) {
         u_printerr("usage error", "<max_hops> should be bigger than 1");
     } else if (opts->nqueries > 10) {
         u_printerr("usage error", "<nqueries> should be smaller than 10");
+    } else if (opts->seq > 10) {
+        u_printerr("usage error", "<seq> should be smaller than 10");
     } else {
         e_start(url, opts);
     }

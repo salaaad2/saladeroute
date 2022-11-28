@@ -28,6 +28,7 @@ u_initopts( void ) {
 int
 u_getopts(char *av[], int index, t_opts *opts) {
     int opt_hops, opt_nqueries, opt_seq;
+    int ret = 0;
     char *s;
     char c;
 
@@ -47,6 +48,9 @@ u_getopts(char *av[], int index, t_opts *opts) {
                 if (opt_hops != 0)
                 {
                     opts->max_hops = opt_hops;
+                    ret = 1;
+                } else {
+                    ret = -1;
                 }
             }
             break;
@@ -57,6 +61,9 @@ u_getopts(char *av[], int index, t_opts *opts) {
                 if (opt_nqueries != 0)
                 {
                     opts->nqueries = opt_nqueries;
+                    ret = 1;
+                } else {
+                    ret = -1;
                 }
             }
             break;
@@ -67,9 +74,12 @@ u_getopts(char *av[], int index, t_opts *opts) {
                 if (opt_seq != 0)
                 {
                     opts->seq = opt_seq;
+                    ret = 1;
+                } else {
+                    ret = -1;
                 }
             }
             break;
     }
-    return (0);
+    return (ret);
 }

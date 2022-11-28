@@ -34,7 +34,7 @@ e_start(char *url, t_opts * opts)
     struct addrinfo hints = {
         AI_CANONNAME, AF_INET, SOCK_RAW, IPPROTO_ICMP, 0, NULL, NULL, NULL
     };
-    char ipstr[4096];
+    char ipstr[4096] = {0};
     void * addr;
     t_time timer;
     t_tracert tracert;
@@ -201,7 +201,6 @@ e_loop(t_tracert * tracert, struct sockaddr_in * servaddr, t_opts * options, int
             {
                 len += sprintf(output + len, " * ");
             }
-            /* copy full struct */
         }
         seq++;
         dprintf(1, "%s\n", output);
