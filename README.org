@@ -1,29 +1,11 @@
 #+TITLE: Readme
 #+author: fmoenne- paure
 
-* Prerequisite :
+# ft_traceroute @ 42
 
-~docker build -t netproj_img .~
-~docker run -itd --name netproj -v $(pwd)/srcs:/opt/netproj netproj_img~
-~docker exec -it netproj "/bin/bash"~
+This is an implementation of the unix traceroute util.
+It only supports ipv4 and does not resolve DNS on each hop.
 
-* I
-traceroute tracks the route packets taken from an IP network on their way to a given host. It utilizes the IP protocol's time to live (TTL) field and attempts to  elicit an ICMP TIME_EXCEEDED response from each gateway along the path to the host.
-This program attempts to trace the route an IP packet would follow to some  internet host  by  launching probe packets with a small ttl (time to live) then listening for an ICMP "time exceeded" reply from a gateway.  We start our probes with a ttl of one and  increase  by  one until we get an ICMP "port unreachable" (or TCP reset), which means we got to the "host", or hit a max (which defaults to 30 hops).  Three  probes (by default) are sent at each ttl setting and a line is printed showing the ttl, ad‐ dress of the gateway and round trip time of each probe. The address can be  followed by  additional  information when requested. If the probe answers come from different gateways, the address of each responding system will be printed.  If there is no re‐ sponse within a certain timeout, an "*" (asterisk) is printed for that probe.
-
-After the trip time, some additional annotation can be printed: !H, !N, or !P (host, network or protocol  unreachable),  !S  (source  route  failed),  !F  (fragmentation needed),  !X (communication administratively prohibited), !V (host precedence viola‐ tion), !C (precedence cutoff in effect), or !<num> (ICMP  unreachable  code  <num>). If almost all the probes result in some kind of unreachable, traceroute will give up and exit.
-
-We don't want the destination host to process the UDP probe packets, so the destina‐ tion port is set to an unlikely value (you can change it with the -p flag). There is no such a problem for ICMP or TCP tracerouting (for TCP we use half-open  technique, which prevents our probes to be seen by applications on the destination host).
-
-In  the modern network environment the traditional traceroute methods can not be al‐ ways applicable, because of widespread use of firewalls.  Such firewalls filter  the "unlikely"  UDP  ports, or even ICMP echoes.  To solve this, some additional tracer‐ outing methods are implemented (including tcp), see LIST OF AVAILABLE METHODS below. Such methods try to use particular protocol and source/destination port, in order to bypass firewalls (to be seen by firewalls just as a start of allowed type of a  net‐ work session).
-
-1: probe loop
-- start at 1
-- increase
-- port unreachable ? TODO: detect
-/!\ probe max is 30 hops
-- measure time
-- setsockopt(IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
-
-
-2: premier paquet pas icmp: icmp toujours ttl64; udp ttl augmente /!\ VOIR .pcap
+The available options are :
+-q: number of queries per hop
+-m: maximum number of hops
